@@ -1,0 +1,123 @@
+services:
+
+
+  mysql:
+
+    image: mysql:8.0
+
+    container_name: neighborhood-mysql
+
+    environment:
+
+      MYSQL_DATABASE: neighborhood_events
+
+      MYSQL_ROOT_PASSWORD: root
+
+
+    ports:
+
+      - "3306:3306"
+
+
+    volumes:
+
+      - mysql_data:/var/lib/mysql
+
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+
+
+    healthcheck:
+
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+
+      interval: 10s
+
+      timeout: 5s
+
+      retries: 10
+
+
+    networks:
+
+      - neighborhood-network
+
+
+
+  backend:
+
+    build:
+
+      context: ./backend
+
+
+    container_name: neighborhood-backend
+
+
+    depends_on:
+
+      mysql:
+        condition: service_healthy
+
+
+    environment:
+
+      SPRING_PROFILES_ACTIVE: production
+
+      DATABASE_URL: jdbc:mysql://mysql:3306/neighborhood_events
+
+      DATABASE_USERNAME: root
+
+      DATABASE_PASSWORD: root
+
+      JWT_SECRET: neighborhood-secret-key-2026-neighborhood-event-management-system
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+
+
+    ports:
+
+      - "8080:8080"
+
+
+    networks:
+
+      - neighborhood-network
+
+
+
+
+  frontend:
+
+    build:
+
+      context: ./frontend
+
+
+    container_name: neighborhood-frontend
+
+
+    depends_on:
+
+      - backend
+
+
+    ports:
+
+      - "3000:3000"
+
+
+    networks:
+
+      - neighborhood-network
+
+
+
+volumes:
+
+  mysql_data:
+
+
+
+networks:
+
+  neighborhood-network:

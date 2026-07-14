@@ -1,0 +1,17 @@
+# Backend build output
+backend/target/
+
+# Frontend dependencies
+frontend/node_modules/
+
+# Environment secrets
+.env
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

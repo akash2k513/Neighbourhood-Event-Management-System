@@ -1,0 +1,96 @@
+/* ── Navbar ── */
+.navbar {
+    background: var(--white);
+    border-bottom: 1px solid var(--gray-200);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.navbar-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--gray-900);
+}
+
+.navbar-links {
+    display: flex;
+    gap: 4px;
+}
+
+.nav-link {
+    padding: 6px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    color: var(--gray-600);
+    transition: color var(--transition), background var(--transition);
+}
+
+.nav-link:hover { color: var(--gray-900); background: var(--gray-100); }
+.nav-link.active { color: var(--primary); font-weight: 600; background: var(--primary-light); }
+
+.navbar-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.btn-outline {
+    padding: 7px 16px;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--gray-700);
+    font-size: 14px;
+    transition: all var(--transition);
+}
+
+.btn-outline:hover { border-color: var(--gray-400); background: var(--gray-50); }
+
+.btn-primary {
+    padding: 7px 16px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--primary);
+    color: var(--white);
+    font-size: 14px;
+    font-weight: 600;
+    transition: background var(--transition);
+}
+
+.btn-primary:hover { background: var(--primary-dark); }
+
+/* ── Page layout ── */
+.page-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px 24px 64px;
+}
+
+/* ── Footer ── */
+.footer {
+    border-top: 1px solid var(--gray-200);
+    background: var(--white);
+    padding: 20px 24px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--gray-500);
+}
+
+@media (max-width: 768px) {
+    .navbar-links { display: none; }
+    .btn-outline   { display: none; }
+}
