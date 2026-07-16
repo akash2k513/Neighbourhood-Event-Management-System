@@ -51,13 +51,23 @@ public class SecurityConfig {
                 exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
             .authorizeHttpRequests(auth -> auth
 
-                // Public — auth + Swagger + docs
+                // Public — auth + Swagger + docs + read-only event/zone/resource browsing
                 .requestMatchers(
                     "/api/auth/**",
                     "/swagger-ui.html",
                     "/swagger-ui/**",
                     "/api-docs/**",
-                    "/v3/api-docs/**"
+                    "/v3/api-docs/**",
+                    "/api/zones",
+                    "/api/zones/{id}",
+                    "/api/resources",
+                    "/api/resources/{id}",
+                    "/api/events",
+                    "/api/events/{id}",
+                    "/api/events/upcoming",
+                    "/api/events/search",
+                    "/api/events/category/**",
+                    "/api/events/calendar"
                 ).permitAll()
 
                 // ADMIN only
