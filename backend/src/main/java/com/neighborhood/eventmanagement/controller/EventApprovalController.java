@@ -38,7 +38,7 @@ public class EventApprovalController {
         this.notificationService = notificationService;
     }
 
-    // ── Submit ────────────────────────────────────────────────────────
+    // ── Submit for approval (DRAFT → PENDING_APPROVAL) ────────────────
 
     @Operation(summary = "Submit event for approval (DRAFT → PENDING_APPROVAL)")
     @PostMapping("/api/events/{eventId}/submit-for-approval")
@@ -53,31 +53,31 @@ public class EventApprovalController {
         EventApproval approval = approvalRepository.findByEvent(event).orElseGet(EventApproval::new);
         approval.setEvent(event);
         approval.setStatus(EventApproval.ApprovalStatus.PENDING);
-        approval.setApprovedAt(LocalDateTime.now());
+        approval.setSubmittedAt(LocalDateTime.now());
+        approval.setApprovedAt(null);
         approvalRepository.save(approval);
+
         return ResponseEntity.ok("Event submitted for approval.");
     }
 
     // ── Pending list ──────────────────────────────────────────────────
 
-    @Operation(summary = "Get all pending approval events")
+    @Operation(summary = "Get all pending approvals (zone-filtered for ZONE_COORDINATOR)")
     @GetMapping("/api/approvals/pending")
-    public ResponseEntity<List<EventApproval>> getPending() {
-        return ResponseEntity.ok(
-                approvalRepository.findAll().stream()
-                        .filter(a -> a.getStatus() == EventApproval.ApprovalStatus.PENDING)
-                        .toList());
+    public ResponseEntity<List<EventApproval>> getPending(Authentication authentication) {
+        User actor = getUser(authentication);
+        if (actor.getRole() == Role.ZONE_COORDINATOR && actor.getZone() != null) {
+            return ResponseEntity.ok(approvalRepository.findPendingByZone(actor.getZone().getId()));
+        }
+        return ResponseEntity.ok(approvalRepository.findByStatus(EventApproval.ApprovalStatus.PENDING));
     }
 
     // ── History ───────────────────────────────────────────────────────
 
-    @Operation(summary = "Get approval history (all non-pending)")
+    @Operation(summary = "Get approval history (all decided approvals)")
     @GetMapping("/api/approvals/history")
     public ResponseEntity<List<EventApproval>> getHistory() {
-        return ResponseEntity.ok(
-                approvalRepository.findAll().stream()
-                        .filter(a -> a.getStatus() != EventApproval.ApprovalStatus.PENDING)
-                        .toList());
+        return ResponseEntity.ok(approvalRepository.findHistory());
     }
 
     // ── Update approval status ────────────────────────────────────────
@@ -92,21 +92,28 @@ public class EventApprovalController {
         EventApproval approval = approvalRepository.findById(approvalId)
                 .orElseThrow(() -> new ResourceNotFoundException("Approval not found: " + approvalId));
 
+        if (approval.getStatus() != EventApproval.ApprovalStatus.PENDING) {
+            throw new ValidationException("Only PENDING approvals can be updated.");
+        }
+
         enforceZoneAccess(actor, approval.getEvent());
 
+        LocalDateTime now = LocalDateTime.now();
         approval.setApprovedBy(actor);
         approval.setStatus(status);
         approval.setRemarks(remarks);
-        approval.setApprovedAt(LocalDateTime.now());
+        approval.setApprovedAt(now);
         approvalRepository.save(approval);
 
         Event event = approval.getEvent();
         if (status == EventApproval.ApprovalStatus.APPROVED) {
             event.setStatus(EventStatus.APPROVED);
+            event.setApprovedBy(actor);
+            event.setApprovalDate(now);
         } else if (status == EventApproval.ApprovalStatus.REJECTED) {
             event.setStatus(EventStatus.REJECTED);
         }
-        // NEEDS_REVISION keeps event in PENDING_APPROVAL
+        // NEEDS_REVISION keeps event in PENDING_APPROVAL — organizer must resubmit
         eventRepository.save(event);
 
         if (event.getOrganizer() != null) {
@@ -124,9 +131,11 @@ public class EventApprovalController {
     public ResponseEntity<String> addComment(@PathVariable Long approvalId,
                                              @RequestParam String comment,
                                              Authentication authentication) {
-        getUser(authentication); // ensure authenticated
+        User actor = getUser(authentication);
         EventApproval approval = approvalRepository.findById(approvalId)
                 .orElseThrow(() -> new ResourceNotFoundException("Approval not found: " + approvalId));
+
+        enforceZoneAccess(actor, approval.getEvent());
 
         String existing = approval.getRemarks() != null ? approval.getRemarks() + "\n" : "";
         approval.setRemarks(existing + comment);
@@ -134,7 +143,7 @@ public class EventApprovalController {
         return ResponseEntity.ok("Comment added.");
     }
 
-    // ── Legacy manage endpoints (kept for backward compat) ────────────
+    // ── Legacy manage endpoints ───────────────────────────────────────
 
     @Operation(summary = "Approve event (shortcut)")
     @PostMapping("/api/events/manage/{eventId}/approve")
@@ -147,9 +156,14 @@ public class EventApprovalController {
             throw new ValidationException("Event is not pending approval.");
         }
         enforceZoneAccess(actor, event);
+
+        LocalDateTime now = LocalDateTime.now();
         event.setStatus(EventStatus.APPROVED);
+        event.setApprovedBy(actor);
+        event.setApprovalDate(now);
         eventRepository.save(event);
-        saveApproval(event, actor, EventApproval.ApprovalStatus.APPROVED, remarks);
+
+        saveApproval(event, actor, EventApproval.ApprovalStatus.APPROVED, remarks, now);
         if (event.getOrganizer() != null)
             notificationService.notifyEventApproval(event.getOrganizer(), event.getTitle(), true);
         return ResponseEntity.ok("Event approved.");
@@ -166,9 +180,11 @@ public class EventApprovalController {
             throw new ValidationException("Event is not pending approval.");
         }
         enforceZoneAccess(actor, event);
+
         event.setStatus(EventStatus.REJECTED);
         eventRepository.save(event);
-        saveApproval(event, actor, EventApproval.ApprovalStatus.REJECTED, remarks);
+
+        saveApproval(event, actor, EventApproval.ApprovalStatus.REJECTED, remarks, LocalDateTime.now());
         if (event.getOrganizer() != null)
             notificationService.notifyEventApproval(event.getOrganizer(), event.getTitle(), false);
         return ResponseEntity.ok("Event rejected.");
@@ -213,26 +229,39 @@ public class EventApprovalController {
     // ── Helpers ───────────────────────────────────────────────────────
 
     /**
-     * ZONE_COORDINATOR can only act on events whose venue zone matches their zone.
+     * ZONE_COORDINATOR can only act on events in their own zone.
+     * Zone is resolved from: event.venue.zone → event.zone (fallback).
+     * If neither is set, ZONE_COORDINATOR is denied (cannot approve zone-less events).
      */
     private void enforceZoneAccess(User actor, Event event) {
         if (actor.getRole() != Role.ZONE_COORDINATOR) return;
-        if (event.getVenue() == null || event.getVenue().getZone() == null) return;
-        if (actor.getZone() == null ||
-                !actor.getZone().getId().equals(event.getVenue().getZone().getId())) {
+
+        Zone eventZone = null;
+        if (event.getVenue() != null && event.getVenue().getZone() != null) {
+            eventZone = event.getVenue().getZone();
+        } else if (event.getZone() != null) {
+            eventZone = event.getZone();
+        }
+
+        if (eventZone == null) {
+            throw new UnauthorizedAccessException(
+                    "Zone Coordinators cannot approve events with no assigned zone.");
+        }
+        if (actor.getZone() == null || !actor.getZone().getId().equals(eventZone.getId())) {
             throw new UnauthorizedAccessException(
                     "Zone Coordinators can only approve events in their own zone.");
         }
     }
 
-    private void saveApproval(Event event, User actor,
-                               EventApproval.ApprovalStatus status, String remarks) {
+    private void saveApproval(Event event, User actor, EventApproval.ApprovalStatus status,
+                               String remarks, LocalDateTime decidedAt) {
         EventApproval approval = approvalRepository.findByEvent(event).orElseGet(EventApproval::new);
         approval.setEvent(event);
         approval.setApprovedBy(actor);
         approval.setStatus(status);
         approval.setRemarks(remarks);
-        approval.setApprovedAt(LocalDateTime.now());
+        approval.setApprovedAt(decidedAt);
+        if (approval.getSubmittedAt() == null) approval.setSubmittedAt(decidedAt);
         approvalRepository.save(approval);
     }
 

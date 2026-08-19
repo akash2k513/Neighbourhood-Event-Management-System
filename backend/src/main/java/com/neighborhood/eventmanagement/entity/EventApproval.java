@@ -30,6 +30,9 @@ public class EventApproval {
     private String remarks;
 
     @Column(nullable = false)
+    private LocalDateTime submittedAt = LocalDateTime.now();
+
+    @Column
     private LocalDateTime approvedAt;
 
     public EventApproval() {
@@ -77,5 +80,13 @@ public class EventApproval {
 
     public void setApprovedAt(LocalDateTime approvedAt) {
         this.approvedAt = approvedAt;
+    }
+
+    public LocalDateTime getSubmittedAt() {
+        return submittedAt;
+    }
+
+    public void setSubmittedAt(LocalDateTime submittedAt) {
+        this.submittedAt = submittedAt;
     }
 }

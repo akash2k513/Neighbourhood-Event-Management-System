@@ -43,6 +43,10 @@ public class EventResponse {
     private String venueName;
     private Long venueId;
 
+    private String approvedByName;
+    private Long approvedById;
+    private LocalDateTime approvalDate;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
@@ -200,6 +204,30 @@ public class EventResponse {
 
     public void setVenueId(Long venueId) {
         this.venueId = venueId;
+    }
+
+    public String getApprovedByName() {
+        return approvedByName;
+    }
+
+    public void setApprovedByName(String approvedByName) {
+        this.approvedByName = approvedByName;
+    }
+
+    public Long getApprovedById() {
+        return approvedById;
+    }
+
+    public void setApprovedById(Long approvedById) {
+        this.approvedById = approvedById;
+    }
+
+    public LocalDateTime getApprovalDate() {
+        return approvalDate;
+    }
+
+    public void setApprovalDate(LocalDateTime approvalDate) {
+        this.approvalDate = approvalDate;
     }
 
     public LocalDateTime getCreatedAt() {

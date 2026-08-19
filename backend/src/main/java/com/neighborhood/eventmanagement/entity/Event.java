@@ -126,6 +126,17 @@ public class Event {
     private Venue venue;
 
 
+    // ==========================
+    // APPROVAL FIELDS
+    // ==========================
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "approved_by")
+    private User approvedBy;
+
+    @Column(name = "approval_date")
+    private LocalDateTime approvalDate;
+
 
     // ==========================
     // AUDIT FIELDS
@@ -329,6 +340,22 @@ public class Event {
         this.venue = venue;
     }
 
+
+    public User getApprovedBy() {
+        return approvedBy;
+    }
+
+    public void setApprovedBy(User approvedBy) {
+        this.approvedBy = approvedBy;
+    }
+
+    public LocalDateTime getApprovalDate() {
+        return approvalDate;
+    }
+
+    public void setApprovalDate(LocalDateTime approvalDate) {
+        this.approvalDate = approvalDate;
+    }
 
     public LocalDateTime getCreatedAt() {
         return createdAt;

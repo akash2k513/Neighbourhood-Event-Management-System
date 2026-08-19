@@ -67,6 +67,13 @@ public class EventMapper {
             response.setVenueId(venue.getId());
         }
 
+        User approvedBy = event.getApprovedBy();
+        if (approvedBy != null) {
+            response.setApprovedByName(approvedBy.getFullName());
+            response.setApprovedById(approvedBy.getId());
+        }
+        response.setApprovalDate(event.getApprovalDate());
+
         response.setCreatedAt(event.getCreatedAt());
         response.setUpdatedAt(event.getUpdatedAt());
 
