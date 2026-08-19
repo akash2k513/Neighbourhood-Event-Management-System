@@ -37,6 +37,9 @@
     font-size: 14px;
     color: var(--gray-600);
     transition: color var(--transition), background var(--transition);
+    border: none;
+    background: transparent;
+    cursor: pointer;
 }
 
 .nav-link:hover { color: var(--gray-900); background: var(--gray-100); }

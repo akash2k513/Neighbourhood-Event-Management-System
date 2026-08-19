@@ -1,13 +1,20 @@
 import React, { useEffect, useState } from "react";
 import eventService from "../services/eventService";
+import registrationService from "../services/registrationService";
+import { useAuth } from "../context/AuthContext";
 import EventCard from "./EventCard";
 import SkeletonCard from "./SkeletonCard";
+import EventDetailModal from "./EventDetailModal";
 import "./EventList.css";
 
 const CATEGORIES = ["SOCIAL","SPORTS","CULTURAL","EDUCATIONAL","HEALTH","ENVIRONMENT","OTHER"];
 const STATUSES   = ["DRAFT","PENDING_APPROVAL","APPROVED","REJECTED","PUBLISHED","CANCELLED","COMPLETED"];
 
 function EventList() {
+
+    const { isLoggedIn } = useAuth();
+    const [selectedEvent, setSelectedEvent]   = useState(null);
+    const [myRegistrations, setMyRegs]        = useState([]);
 
     const [events, setEvents]         = useState([]);
     const [loading, setLoading]       = useState(true);
@@ -32,6 +39,13 @@ function EventList() {
         window.addEventListener("resize", onResize);
         return () => window.removeEventListener("resize", onResize);
     }, []);
+
+    useEffect(() => {
+        if (!isLoggedIn) return;
+        registrationService.getMyRegistrations()
+            .then((r) => setMyRegs(r.data))
+            .catch(() => {});
+    }, [isLoggedIn]);
 
     const loadEvents = async () => {
         try {
@@ -208,7 +222,7 @@ function EventList() {
             {!loading && !error && events.length > 0 && (
                 <div className={`el-grid ${view}`}>
                     {events.map(event => (
-                        <EventCard key={event.id} event={event} view={view} />
+                        <EventCard key={event.id} event={event} view={view} onViewDetails={setSelectedEvent} />
                     ))}
                 </div>
             )}
@@ -248,6 +262,14 @@ function EventList() {
                         Next →
                     </button>
                 </div>
+            )}
+
+            {selectedEvent && (
+                <EventDetailModal
+                    event={selectedEvent}
+                    myRegistrations={myRegistrations}
+                    onClose={() => setSelectedEvent(null)}
+                />
             )}
 
         </div>

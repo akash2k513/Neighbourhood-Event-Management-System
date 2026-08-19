@@ -11,7 +11,7 @@ const STATUS_COLORS = {
     COMPLETED:        { color: '#1e40af', bg: '#dbeafe' },
 };
 
-function EventCard({ event, view }) {
+function EventCard({ event, view, onViewDetails }) {
     const fmt = (d) =>
         new Date(d).toLocaleString('en-IN', {
             day: '2-digit', month: 'short', year: 'numeric',
@@ -45,7 +45,7 @@ function EventCard({ event, view }) {
                 <li>👥 {event.registeredCount} / {event.capacity} registered</li>
             </ul>
 
-            <button className="ec-btn">View Details</button>
+            <button className="ec-btn" onClick={() => onViewDetails && onViewDetails(event)}>View Details</button>
 
         </article>
     );
