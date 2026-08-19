@@ -13,4 +13,6 @@ public interface EmailService {
     void sendEventCancellationEmail(String to, String eventTitle);
 
     void sendGenericNotification(String to, String subject, String body);
+
+    void sendAnnouncementEmail(String to, String zoneName, String title, String message);
 }

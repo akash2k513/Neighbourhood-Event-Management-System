@@ -47,14 +47,19 @@ public class NotificationController {
 
     // ── Get paginated notifications ───────────────────────────────────
 
-    @Operation(summary = "Get paginated notifications for current user")
+    @Operation(summary = "Get paginated notifications for current user, optionally filtered by priority")
     @GetMapping
     public ResponseEntity<Page<Notification>> getMyNotifications(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) Notification.Priority priority,
             Authentication authentication) {
+
         User user = getUser(authentication);
-        List<Notification> all = notificationRepository.findByUserOrderByCreatedAtDesc(user);
+        List<Notification> all = priority != null
+                ? notificationRepository.findByUserAndPriority(user, priority)
+                : notificationRepository.findByUserOrderByCreatedAtDesc(user);
+
         int start = Math.min(page * size, all.size());
         int end   = Math.min(start + size, all.size());
         return ResponseEntity.ok(new PageImpl<>(all.subList(start, end),
@@ -70,7 +75,7 @@ public class NotificationController {
                 notificationRepository.findByUserAndIsReadFalseOrderByCreatedAtDesc(getUser(authentication)));
     }
 
-    @Operation(summary = "Get unread notification count")
+    @Operation(summary = "Get unread notification count (real-time DB query)")
     @GetMapping("/unread-count")
     public ResponseEntity<Map<String, Long>> getUnreadCount(Authentication authentication) {
         long count = notificationService.countUnread(getUser(authentication));
@@ -111,7 +116,7 @@ public class NotificationController {
 
     // ── Send (Admin / Community Manager) ─────────────────────────────
 
-    @Operation(summary = "Send notification to a user (Admin/Manager)")
+    @Operation(summary = "Send notification to a specific user (Admin/Manager)")
     @PostMapping("/send")
     public ResponseEntity<String> send(@RequestBody SendRequest request) {
         User target = userRepository.findById(request.userId())
@@ -121,7 +126,7 @@ public class NotificationController {
         return ResponseEntity.ok("Notification sent.");
     }
 
-    @Operation(summary = "Broadcast announcement to all residents in a zone (Community Manager)")
+    @Operation(summary = "Broadcast community announcement to all residents in a zone (Community Manager)")
     @PostMapping("/broadcast")
     public ResponseEntity<String> broadcast(@RequestBody BroadcastRequest request) {
         Zone zone = zoneRepository.findById(request.zoneId())

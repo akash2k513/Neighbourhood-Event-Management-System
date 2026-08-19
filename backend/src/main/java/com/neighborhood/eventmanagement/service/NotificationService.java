@@ -26,6 +26,8 @@ public class NotificationService {
         this.emailService = emailService;
     }
 
+    // ── Core notify ───────────────────────────────────────────────────
+
     public void notifyUser(User user, String title, String message,
                            Notification.Priority priority, boolean sendEmail) {
         Notification n = new Notification();
@@ -42,40 +44,60 @@ public class NotificationService {
         }
     }
 
+    // ── Domain-specific notifications ─────────────────────────────────
+
+    /**
+     * Saves in-app notification AND sends one approval email.
+     * notifyUser is called with sendEmail=false to avoid a second generic email.
+     */
     public void notifyEventApproval(User organizer, String eventTitle, boolean approved) {
         String title = "Event " + (approved ? "Approved" : "Rejected") + ": " + eventTitle;
         String msg   = "Your event \"" + eventTitle + "\" has been "
                      + (approved ? "approved." : "rejected.");
-        notifyUser(organizer, title, msg, Notification.Priority.HIGH, true);
-        try { emailService.sendEventApprovalEmail(organizer.getEmail(), eventTitle, approved); }
-        catch (Exception ignored) {}
+        notifyUser(organizer, title, msg, Notification.Priority.HIGH, false);
+        try {
+            emailService.sendEventApprovalEmail(organizer.getEmail(), eventTitle, approved);
+        } catch (Exception ignored) {}
     }
 
     public void notifyRegistrationConfirmed(User user, String eventTitle) {
-        notifyUser(user, "Registration Confirmed: " + eventTitle,
+        notifyUser(user,
+                "Registration Confirmed: " + eventTitle,
                 "You are registered for \"" + eventTitle + "\".",
-                Notification.Priority.MEDIUM, true);
-        try { emailService.sendRegistrationConfirmationEmail(user.getEmail(), eventTitle); }
-        catch (Exception ignored) {}
+                Notification.Priority.MEDIUM, false);
+        try {
+            emailService.sendRegistrationConfirmationEmail(user.getEmail(), eventTitle);
+        } catch (Exception ignored) {}
     }
 
     public void notifyEventCancelled(User user, String eventTitle) {
-        notifyUser(user, "Event Cancelled: " + eventTitle,
+        notifyUser(user,
+                "Event Cancelled: " + eventTitle,
                 "The event \"" + eventTitle + "\" has been cancelled.",
-                Notification.Priority.HIGH, true);
-        try { emailService.sendEventCancellationEmail(user.getEmail(), eventTitle); }
-        catch (Exception ignored) {}
+                Notification.Priority.HIGH, false);
+        try {
+            emailService.sendEventCancellationEmail(user.getEmail(), eventTitle);
+        } catch (Exception ignored) {}
     }
 
+    /**
+     * Sends in-app notification + email to every resident in the zone.
+     */
     public void broadcastToZone(Zone zone, String title, String message,
                                 Notification.Priority priority) {
         List<User> residents = userRepository.findByZone(zone);
         for (User u : residents) {
             notifyUser(u, title, message, priority, false);
+            try {
+                emailService.sendAnnouncementEmail(u.getEmail(), zone.getName(), title, message);
+            } catch (Exception ignored) {}
         }
     }
 
+    // ── Count ─────────────────────────────────────────────────────────
+
+    @Transactional(readOnly = true)
     public long countUnread(User user) {
-        return notificationRepository.findByUserAndIsReadFalseOrderByCreatedAtDesc(user).size();
+        return notificationRepository.countByUserAndIsReadFalse(user);
     }
 }
