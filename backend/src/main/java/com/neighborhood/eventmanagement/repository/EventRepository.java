@@ -62,4 +62,10 @@ public interface EventRepository extends JpaRepository<Event, Long>,
 
     // Derived query — findByCategory
     List<Event> findByCategory(EventCategory category);
+
+    // Derived query — findByZone
+    List<Event> findByZone(Zone zone);
+
+    // Derived query — findByVenue
+    List<Event> findByVenue(com.neighborhood.eventmanagement.entity.Venue venue);
 }

@@ -31,7 +31,9 @@ public class EventRegistration {
     @Column(nullable = false)
     private RegistrationStatus status = RegistrationStatus.REGISTERED;
 
-    public enum RegistrationStatus { REGISTERED, CANCELLED, ATTENDED }
+    public enum RegistrationStatus { REGISTERED, WAITLISTED, CANCELLED, ATTENDED }
+
+    private LocalDateTime checkInTime;
 
     public EventRegistration() {
     }
@@ -70,5 +72,13 @@ public class EventRegistration {
 
     public void setStatus(RegistrationStatus status) {
         this.status = status;
+    }
+
+    public LocalDateTime getCheckInTime() {
+        return checkInTime;
+    }
+
+    public void setCheckInTime(LocalDateTime checkInTime) {
+        this.checkInTime = checkInTime;
     }
 }

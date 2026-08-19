@@ -45,6 +45,8 @@ private LocalDateTime endTime;
     @NotNull(message = "Zone ID is required")
     private Long zoneId;
 
+    private Long venueId; // optional
+
     public EventRequest() {
     }
 
@@ -142,5 +144,13 @@ private LocalDateTime endTime;
 
     public void setZoneId(Long zoneId) {
         this.zoneId = zoneId;
+    }
+
+    public Long getVenueId() {
+        return venueId;
+    }
+
+    public void setVenueId(Long venueId) {
+        this.venueId = venueId;
     }
 }

@@ -32,11 +32,14 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- 3. Venues
 CREATE TABLE IF NOT EXISTS venues (
-    id       BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name     VARCHAR(255) NOT NULL,
-    address  VARCHAR(500),
-    capacity INT,
-    zone_id  BIGINT,
+    id                     BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name                   VARCHAR(255)   NOT NULL,
+    address                VARCHAR(500),
+    capacity               INT,
+    hourly_rate            DECIMAL(10,2),
+    accessibility_features VARCHAR(500),
+    is_available           TINYINT(1)     NOT NULL DEFAULT 1,
+    zone_id                BIGINT,
     CONSTRAINT fk_venues_zone FOREIGN KEY (zone_id) REFERENCES zones(id) ON DELETE SET NULL,
     INDEX idx_venues_zone (zone_id)
 );
@@ -58,10 +61,12 @@ CREATE TABLE IF NOT EXISTS events (
     recurrence_end_date  DATE,
     organizer_id         BIGINT,
     zone_id              BIGINT,
+    venue_id             BIGINT,
     created_at           DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at           DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_events_organizer FOREIGN KEY (organizer_id) REFERENCES users(id) ON DELETE SET NULL,
     CONSTRAINT fk_events_zone      FOREIGN KEY (zone_id)      REFERENCES zones(id) ON DELETE SET NULL,
+    CONSTRAINT fk_events_venue     FOREIGN KEY (venue_id)     REFERENCES venues(id) ON DELETE SET NULL,
     INDEX idx_events_status     (status),
     INDEX idx_events_organizer  (organizer_id),
     INDEX idx_events_zone       (zone_id),
@@ -73,8 +78,9 @@ CREATE TABLE IF NOT EXISTS event_registrations (
     id            BIGINT AUTO_INCREMENT PRIMARY KEY,
     event_id      BIGINT   NOT NULL,
     user_id       BIGINT   NOT NULL,
-    status        ENUM('REGISTERED','CANCELLED','ATTENDED') NOT NULL DEFAULT 'REGISTERED',
+    status        ENUM('REGISTERED','WAITLISTED','CANCELLED','ATTENDED') NOT NULL DEFAULT 'REGISTERED',
     registered_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    check_in_time DATETIME,
     CONSTRAINT fk_ereg_event FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
     CONSTRAINT fk_ereg_user  FOREIGN KEY (user_id)  REFERENCES users(id)  ON DELETE CASCADE,
     UNIQUE INDEX uq_ereg_event_user (event_id, user_id),
@@ -87,7 +93,7 @@ CREATE TABLE IF NOT EXISTS event_approvals (
     id          BIGINT AUTO_INCREMENT PRIMARY KEY,
     event_id    BIGINT   NOT NULL UNIQUE,
     approved_by BIGINT,
-    status      ENUM('PENDING','APPROVED','REJECTED') NOT NULL DEFAULT 'PENDING',
+    status      ENUM('PENDING','APPROVED','REJECTED','NEEDS_REVISION') NOT NULL DEFAULT 'PENDING',
     remarks     VARCHAR(500),
     approved_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_eapp_event    FOREIGN KEY (event_id)    REFERENCES events(id) ON DELETE CASCADE,
@@ -110,6 +116,9 @@ CREATE TABLE IF NOT EXISTS resource_bookings (
     resource_id      BIGINT   NOT NULL,
     event_id         BIGINT   NOT NULL,
     quantity_booked  INT      NOT NULL,
+    status           ENUM('PENDING','CONFIRMED','CANCELLED') NOT NULL DEFAULT 'PENDING',
+    start_time       DATETIME NOT NULL,
+    end_time         DATETIME NOT NULL,
     booked_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_rbooking_resource FOREIGN KEY (resource_id) REFERENCES resources(id) ON DELETE CASCADE,
     CONSTRAINT fk_rbooking_event    FOREIGN KEY (event_id)    REFERENCES events(id)    ON DELETE CASCADE,
@@ -124,10 +133,25 @@ CREATE TABLE IF NOT EXISTS notifications (
     title      VARCHAR(255) NOT NULL,
     message    VARCHAR(1000),
     is_read    TINYINT(1)   NOT NULL DEFAULT 0,
+    priority   ENUM('LOW','MEDIUM','HIGH','URGENT') NOT NULL DEFAULT 'MEDIUM',
     created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_notif_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_notif_user    (user_id),
     INDEX idx_notif_is_read (is_read)
+);
+
+-- 14. Feedback
+CREATE TABLE IF NOT EXISTS feedback (
+    id         BIGINT AUTO_INCREMENT PRIMARY KEY,
+    event_id   BIGINT NOT NULL,
+    user_id    BIGINT NOT NULL,
+    rating     INT    NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    comment    VARCHAR(1000),
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_feedback_event FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+    CONSTRAINT fk_feedback_user  FOREIGN KEY (user_id)  REFERENCES users(id)  ON DELETE CASCADE,
+    INDEX idx_feedback_event (event_id),
+    INDEX idx_feedback_user  (user_id)
 );
 
 -- 11. RefreshTokens

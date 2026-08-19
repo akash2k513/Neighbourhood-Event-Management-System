@@ -24,7 +24,7 @@ public class EventApproval {
     @Column(nullable = false)
     private ApprovalStatus status = ApprovalStatus.PENDING;
 
-    public enum ApprovalStatus { PENDING, APPROVED, REJECTED }
+    public enum ApprovalStatus { PENDING, APPROVED, REJECTED, NEEDS_REVISION }
 
     @Column(length = 500)
     private String remarks;

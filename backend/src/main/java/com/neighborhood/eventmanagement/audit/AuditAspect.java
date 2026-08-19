@@ -1,15 +1,17 @@
 package com.neighborhood.eventmanagement.audit;
 
 import com.neighborhood.eventmanagement.entity.AuditLog;
-import com.neighborhood.eventmanagement.entity.User;
 import com.neighborhood.eventmanagement.repository.AuditLogRepository;
 import com.neighborhood.eventmanagement.repository.UserRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -35,20 +37,34 @@ public class AuditAspect {
         log.setAction(auditable.action());
         log.setCreatedAt(LocalDateTime.now());
 
-        // Capture acting user from SecurityContext
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
             userRepository.findByEmail(auth.getName()).ifPresent(log::setUser);
         }
 
-        // Build details: method args as old values, return value as new value
+        // Capture IP and User-Agent from current HTTP request
+        String ipAddress = "unknown";
+        String userAgent = "unknown";
+        try {
+            ServletRequestAttributes attrs =
+                    (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            if (attrs != null) {
+                HttpServletRequest request = attrs.getRequest();
+                ipAddress = request.getRemoteAddr();
+                userAgent = request.getHeader("User-Agent");
+                if (userAgent == null) userAgent = "unknown";
+            }
+        } catch (Exception ignored) {}
+
         String args = Arrays.stream(joinPoint.getArgs())
                 .map(arg -> arg == null ? "null" : arg.toString())
                 .collect(Collectors.joining(", "));
 
         String details = "method=" + joinPoint.getSignature().getName()
                 + " | args=[" + args + "]"
-                + " | result=" + (result != null ? result.toString() : "void");
+                + " | result=" + (result != null ? result.toString() : "void")
+                + " | ip=" + ipAddress
+                + " | ua=" + userAgent;
 
         log.setDetails(details.length() > 1000 ? details.substring(0, 1000) : details);
 

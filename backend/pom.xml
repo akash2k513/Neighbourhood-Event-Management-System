@@ -125,7 +125,7 @@ Neighborhood Event Management System
 
 
 
-    <!-- AOP — required for @Auditable aspect -->
+    <!-- AOP — required for @Auditable AuditAspect -->
 
     <dependency>
 

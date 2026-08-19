@@ -40,6 +40,9 @@ public class EventResponse {
     private String zoneName;
     private Long zoneId;
 
+    private String venueName;
+    private Long venueId;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
@@ -181,6 +184,22 @@ public class EventResponse {
 
     public void setZoneId(Long zoneId) {
         this.zoneId = zoneId;
+    }
+
+    public String getVenueName() {
+        return venueName;
+    }
+
+    public void setVenueName(String venueName) {
+        this.venueName = venueName;
+    }
+
+    public Long getVenueId() {
+        return venueId;
+    }
+
+    public void setVenueId(Long venueId) {
+        this.venueId = venueId;
     }
 
     public LocalDateTime getCreatedAt() {

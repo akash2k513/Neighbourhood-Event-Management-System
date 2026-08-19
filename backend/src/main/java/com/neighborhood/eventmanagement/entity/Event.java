@@ -121,6 +121,11 @@ public class Event {
     private Zone zone;
 
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "venue_id")
+    private Venue venue;
+
+
 
     // ==========================
     // AUDIT FIELDS
@@ -312,6 +317,16 @@ public class Event {
 
     public void setZone(Zone zone) {
         this.zone = zone;
+    }
+
+
+    public Venue getVenue() {
+        return venue;
+    }
+
+
+    public void setVenue(Venue venue) {
+        this.venue = venue;
     }
 
 

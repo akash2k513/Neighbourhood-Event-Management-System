@@ -4,8 +4,13 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "resource_bookings")
+@Table(name = "resource_bookings", indexes = {
+    @Index(name = "idx_rbooking_resource", columnList = "resource_id"),
+    @Index(name = "idx_rbooking_event",    columnList = "event_id")
+})
 public class ResourceBooking {
+
+    public enum BookingStatus { PENDING, CONFIRMED, CANCELLED }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,45 +27,41 @@ public class ResourceBooking {
     @Column(nullable = false)
     private Integer quantityBooked;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private LocalDateTime bookedAt;
+    private BookingStatus status = BookingStatus.PENDING;
 
-    public ResourceBooking() {
-    }
+    @Column(nullable = false)
+    private LocalDateTime startTime;
 
-    public Long getId() {
-        return id;
-    }
+    @Column(nullable = false)
+    private LocalDateTime endTime;
 
-    public Resource getResource() {
-        return resource;
-    }
+    @Column(nullable = false)
+    private LocalDateTime bookedAt = LocalDateTime.now();
 
-    public void setResource(Resource resource) {
-        this.resource = resource;
-    }
+    public ResourceBooking() {}
 
-    public Event getEvent() {
-        return event;
-    }
+    public Long getId() { return id; }
 
-    public void setEvent(Event event) {
-        this.event = event;
-    }
+    public Resource getResource() { return resource; }
+    public void setResource(Resource resource) { this.resource = resource; }
 
-    public Integer getQuantityBooked() {
-        return quantityBooked;
-    }
+    public Event getEvent() { return event; }
+    public void setEvent(Event event) { this.event = event; }
 
-    public void setQuantityBooked(Integer quantityBooked) {
-        this.quantityBooked = quantityBooked;
-    }
+    public Integer getQuantityBooked() { return quantityBooked; }
+    public void setQuantityBooked(Integer quantityBooked) { this.quantityBooked = quantityBooked; }
 
-    public LocalDateTime getBookedAt() {
-        return bookedAt;
-    }
+    public BookingStatus getStatus() { return status; }
+    public void setStatus(BookingStatus status) { this.status = status; }
 
-    public void setBookedAt(LocalDateTime bookedAt) {
-        this.bookedAt = bookedAt;
-    }
+    public LocalDateTime getStartTime() { return startTime; }
+    public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
+
+    public LocalDateTime getEndTime() { return endTime; }
+    public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
+
+    public LocalDateTime getBookedAt() { return bookedAt; }
+    public void setBookedAt(LocalDateTime bookedAt) { this.bookedAt = bookedAt; }
 }

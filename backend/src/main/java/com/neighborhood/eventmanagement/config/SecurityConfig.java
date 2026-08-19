@@ -51,7 +51,7 @@ public class SecurityConfig {
                 exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
             .authorizeHttpRequests(auth -> auth
 
-                // Public — auth + Swagger + docs + read-only event/zone/resource browsing
+                // Public — auth + Swagger + docs + read-only browsing
                 .requestMatchers(
                     "/api/auth/**",
                     "/swagger-ui.html",
@@ -60,14 +60,22 @@ public class SecurityConfig {
                     "/v3/api-docs/**",
                     "/api/zones",
                     "/api/zones/{id}",
+                    "/api/zones/{id}/events",
+                    "/api/zones/{id}/residents",
+                    "/api/venues",
+                    "/api/venues/{id}",
+                    "/api/venues/available",
+                    "/api/venues/zone/{zoneId}",
                     "/api/resources",
                     "/api/resources/{id}",
+                    "/api/resources/available",
                     "/api/events",
                     "/api/events/{id}",
                     "/api/events/upcoming",
                     "/api/events/search",
                     "/api/events/category/**",
-                    "/api/events/calendar"
+                    "/api/events/calendar",
+                    "/api/events/{id}/feedback"
                 ).permitAll()
 
                 // ADMIN only
@@ -75,12 +83,28 @@ public class SecurityConfig {
                     .hasRole("ADMIN")
 
                 // COMMUNITY_MANAGER + ADMIN — event approval/management
-                .requestMatchers("/api/events/manage/**")
+                .requestMatchers("/api/events/manage/**", "/api/approvals/**")
                     .hasAnyRole("COMMUNITY_MANAGER", "ADMIN")
 
                 // ZONE_COORDINATOR + COMMUNITY_MANAGER + ADMIN — zone management
                 .requestMatchers("/api/zones/manage/**")
                     .hasAnyRole("ZONE_COORDINATOR", "COMMUNITY_MANAGER", "ADMIN")
+
+                // ZONE_COORDINATOR + COMMUNITY_MANAGER + ADMIN — venue write
+                .requestMatchers(org.springframework.http.HttpMethod.POST,   "/api/venues")
+                    .hasAnyRole("ZONE_COORDINATOR", "COMMUNITY_MANAGER", "ADMIN")
+                .requestMatchers(org.springframework.http.HttpMethod.PUT,    "/api/venues/{id}")
+                    .hasAnyRole("ZONE_COORDINATOR", "COMMUNITY_MANAGER", "ADMIN")
+                .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/venues/{id}")
+                    .hasRole("ADMIN")
+
+                // COMMUNITY_MANAGER + ADMIN — send/broadcast notifications
+                .requestMatchers("/api/notifications/send", "/api/notifications/broadcast")
+                    .hasAnyRole("COMMUNITY_MANAGER", "ADMIN")
+
+                // COMMUNITY_MANAGER + ADMIN — analytics and reports
+                .requestMatchers("/api/analytics/**", "/api/reports/**")
+                    .hasAnyRole("COMMUNITY_MANAGER", "ADMIN")
 
                 // EVENT_ORGANIZER + COMMUNITY_MANAGER + ADMIN — organizer actions
                 .requestMatchers("/api/events/organizer/**")

@@ -11,6 +11,8 @@ import java.time.LocalDateTime;
 })
 public class Notification {
 
+    public enum Priority { LOW, MEDIUM, HIGH, URGENT }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -28,8 +30,12 @@ public class Notification {
     @Column(nullable = false)
     private Boolean isRead = false;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private LocalDateTime createdAt;
+    private Priority priority = Priority.MEDIUM;
+
+    @Column(nullable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     public Notification() {
     }
@@ -68,6 +74,14 @@ public class Notification {
 
     public void setIsRead(Boolean isRead) {
         this.isRead = isRead;
+    }
+
+    public Priority getPriority() {
+        return priority;
+    }
+
+    public void setPriority(Priority priority) {
+        this.priority = priority;
     }
 
     public LocalDateTime getCreatedAt() {
