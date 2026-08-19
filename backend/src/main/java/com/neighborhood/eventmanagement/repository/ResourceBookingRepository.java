@@ -28,4 +28,19 @@ public interface ResourceBookingRepository extends JpaRepository<ResourceBooking
             @Param("resource") Resource resource,
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime);
+
+    @Query("""
+            SELECT COUNT(rb)
+            FROM ResourceBooking rb
+            WHERE rb.resource = :resource
+              AND rb.status <> 'CANCELLED'
+              AND rb.startTime < :endTime
+              AND rb.endTime > :startTime
+              AND (:excludeId IS NULL OR rb.id <> :excludeId)
+            """)
+    long countOverlappingBookings(
+            @Param("resource") Resource resource,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime,
+            @Param("excludeId") Long excludeId);
 }

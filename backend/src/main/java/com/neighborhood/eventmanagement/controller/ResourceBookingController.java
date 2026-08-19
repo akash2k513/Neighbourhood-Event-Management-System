@@ -48,14 +48,22 @@ public class ResourceBookingController {
         Event event = eventRepository.findById(request.eventId())
                 .orElseThrow(() -> new ResourceNotFoundException("Event not found: " + request.eventId()));
 
-        // Quantity check
-        Integer alreadyBooked = bookingRepository.sumBookedQuantityInWindow(
-                resource, request.startTime(), request.endTime());
-        if (alreadyBooked == null) alreadyBooked = 0;
+        if (!request.endTime().isAfter(request.startTime())) {
+            throw new ValidationException("endTime must be after startTime.");
+        }
 
-        int available = resource.getQuantity() - alreadyBooked;
-        if (request.quantity() > available) {
-            throw new ValidationException("Only " + available + " unit(s) available in this time window.");
+        // Overlap check — reject if any non-cancelled booking overlaps this window
+        long overlaps = bookingRepository.countOverlappingBookings(
+                resource, request.startTime(), request.endTime(), null);
+        if (overlaps > 0) {
+            // Quantity check within the overlapping window
+            Integer alreadyBooked = bookingRepository.sumBookedQuantityInWindow(
+                    resource, request.startTime(), request.endTime());
+            if (alreadyBooked == null) alreadyBooked = 0;
+            int available = resource.getQuantity() - alreadyBooked;
+            if (request.quantity() > available) {
+                throw new ValidationException("Only " + available + " unit(s) available in this time window.");
+            }
         }
 
         ResourceBooking booking = new ResourceBooking();
@@ -64,7 +72,7 @@ public class ResourceBookingController {
         booking.setQuantityBooked(request.quantity());
         booking.setStartTime(request.startTime());
         booking.setEndTime(request.endTime());
-        booking.setStatus(ResourceBooking.BookingStatus.CONFIRMED);
+        booking.setStatus(ResourceBooking.BookingStatus.PENDING);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(bookingRepository.save(booking));
     }
@@ -103,6 +111,9 @@ public class ResourceBookingController {
     public ResponseEntity<String> cancelBooking(@PathVariable Long bookingId) {
         ResourceBooking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found: " + bookingId));
+        if (booking.getStatus() == ResourceBooking.BookingStatus.CANCELLED) {
+            throw new ValidationException("Booking is already cancelled.");
+        }
         booking.setStatus(ResourceBooking.BookingStatus.CANCELLED);
         bookingRepository.save(booking);
         return ResponseEntity.ok("Booking cancelled.");

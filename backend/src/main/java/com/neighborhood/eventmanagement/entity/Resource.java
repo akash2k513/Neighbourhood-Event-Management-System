@@ -6,6 +6,8 @@ import jakarta.persistence.*;
 @Table(name = "resources")
 public class Resource {
 
+    public enum ResourceType { EQUIPMENT, FACILITY, SERVICE }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -15,37 +17,33 @@ public class Resource {
 
     private String description;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ResourceType type;
+
     @Column(nullable = false)
     private Integer quantity;
 
-    public Resource() {
-    }
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "venue_id")
+    private Venue venue;
 
-    public Long getId() {
-        return id;
-    }
+    public Resource() {}
 
-    public String getName() {
-        return name;
-    }
+    public Long getId() { return id; }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public String getDescription() {
-        return description;
-    }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
+    public ResourceType getType() { return type; }
+    public void setType(ResourceType type) { this.type = type; }
 
-    public Integer getQuantity() {
-        return quantity;
-    }
+    public Integer getQuantity() { return quantity; }
+    public void setQuantity(Integer quantity) { this.quantity = quantity; }
 
-    public void setQuantity(Integer quantity) {
-        this.quantity = quantity;
-    }
+    public Venue getVenue() { return venue; }
+    public void setVenue(Venue venue) { this.venue = venue; }
 }

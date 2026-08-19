@@ -107,7 +107,11 @@ CREATE TABLE IF NOT EXISTS resources (
     id          BIGINT AUTO_INCREMENT PRIMARY KEY,
     name        VARCHAR(255) NOT NULL,
     description VARCHAR(500),
-    quantity    INT          NOT NULL
+    type        ENUM('EQUIPMENT','FACILITY','SERVICE') NOT NULL,
+    quantity    INT          NOT NULL,
+    venue_id    BIGINT,
+    CONSTRAINT fk_resource_venue FOREIGN KEY (venue_id) REFERENCES venues(id) ON DELETE SET NULL,
+    INDEX idx_resource_venue (venue_id)
 );
 
 -- 8. ResourceBookings

@@ -98,6 +98,14 @@ public class SecurityConfig {
                 .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/venues/{id}")
                     .hasRole("ADMIN")
 
+                // COMMUNITY_MANAGER + ADMIN — resource create/update/delete
+                .requestMatchers(org.springframework.http.HttpMethod.POST,   "/api/resources")
+                    .hasAnyRole("COMMUNITY_MANAGER", "ADMIN")
+                .requestMatchers(org.springframework.http.HttpMethod.PUT,    "/api/resources/{id}")
+                    .hasAnyRole("COMMUNITY_MANAGER", "ADMIN")
+                .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/resources/{id}")
+                    .hasRole("ADMIN")
+
                 // COMMUNITY_MANAGER + ADMIN — send/broadcast notifications
                 .requestMatchers("/api/notifications/send", "/api/notifications/broadcast")
                     .hasAnyRole("COMMUNITY_MANAGER", "ADMIN")
